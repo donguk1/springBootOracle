@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- JAVA와 연결할 Mapper 파일 설정 -->
+<mapper namespace="kopo.poly.persistance.mapper.IUserMapper">
+
+    <!-- 아이디 중복확인 -->
+    <select id="getIdExists" parameterType="UserDTO" resultType="UserDTO">
+        SELECT DECODE(COUNT(1), 0, 'N', 'Y') AS EXISTS_YN
+        FROM USER_INFO
+        WHERE ID = #{id}
+    </select>
+
+    <!-- 이메일 중복확인 -->
+    <select id="getEmailExists" parameterType="UserDTO" resultType="UserDTO">
+        SELECT DECODE(COUNT(1), 0, 'N', 'Y') AS EXISTS_YN
+        FROM USER_INFO
+        WHERE EMAIL = #{email}
+    </select>
+
+    <!-- 회원 가입 -->
+    <insert id="insertUser" parameterType="UserDTO">
+        INSERT INTO USER_INFO
+        (ID, NAME, PW, EMAIL, ADDR1, ADDR2, REG_ID, REG_DT, CHG_ID, CHG_DT, USER_SEQ)
+        VALUES
+        (#{id}, #{name}, #{pw}, #{email}, #{addr1}, #{addr2}, #{id}, SYSDATE, #{id}, SYSDATE,
+         (SELECT NVL(MAX(A.USER_SEQ),0)+1 FROM USER_INfo A))
+    </insert>
+
+    <!-- 유저 리스트 가져오기 -->
+    <select id="getUserList" resultType="UserDTO">
+        SELECT USER_SEQ, ID, NAME, EMAIL, ADDR1, ADDR2
+        FROM USER_INFO
+        ORDER BY USER_SEQ DESC
+    </select>
+
+    <!-- 유저 상세보기 -->
+    <select id="getUserInfo" resultType="UserDTO" parameterType="UserDTO">
+        SELECT ID, NAME, EMAIL, ADDR1, ADDR2
+        FROM USER_INFO
+        WHERE ID = #{id}
+    </select>
+
+</mapper>
