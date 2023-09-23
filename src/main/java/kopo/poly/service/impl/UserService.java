@@ -6,12 +6,14 @@ import kopo.poly.persistance.mapper.IUserMapper;
 import kopo.poly.service.IMailService;
 import kopo.poly.service.IUserService;
 import kopo.poly.util.CmmUtil;
+import kopo.poly.util.DateUtil;
 import kopo.poly.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Slf4j
@@ -114,10 +116,37 @@ public class UserService implements IUserService {
     }
 
     /* 유저 상세보기 */
+    @Override
     public UserDTO getUserInfo(UserDTO pDTO) throws Exception {
 
         log.info(".service 유저 상세보기 실행");
 
         return userMapper.getUserInfo(pDTO);
+    }
+
+    @Override
+    public UserDTO getLogin(UserDTO pDTO) throws Exception {
+
+        log.info(".service 로그인 시작");
+
+        UserDTO rDTO = Optional.ofNullable(userMapper.getLogin(pDTO)).orElseGet(UserDTO::new);
+
+//        if (CmmUtil.nvl(rDTO.getId()).length() > 0) {
+//
+//            MailDTO mDTO = new MailDTO();
+//
+//            mDTO.setToMail(EncryptUtil.decAES128CBC(CmmUtil.nvl(rDTO.getEmail())));
+//
+//            mDTO.setTitle("로그인 알림!");
+//            mDTO.setContents(DateUtil.getDateTime("yyyy.MM.dd hh:mm:ss") + "에 " +
+//                    CmmUtil.nvl(rDTO.getName()) + "님이 로그인 하였습니다.");
+//
+//            mailService.doSendMail(mDTO);
+//
+//        }
+
+        log.info(".service 로그인 종료");
+
+        return rDTO;
     }
 }

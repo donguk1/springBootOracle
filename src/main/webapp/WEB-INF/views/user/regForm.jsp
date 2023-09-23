@@ -250,7 +250,7 @@
         </div>
     </div>
     <div>
-        <button id="btnSend" type="submit">회원가입</button>
+        <button id="btnSend" type="button">회원가입</button>
     </div>
 
 

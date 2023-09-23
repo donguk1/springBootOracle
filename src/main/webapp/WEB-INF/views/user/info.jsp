@@ -34,7 +34,7 @@
 
             // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
             $("#btnDelete").on("click", function () {
-                location.href = "/user/userList"; // 공지사항 리스트 이동
+                location.href = "/user/list"; // 공지사항 리스트 이동
             })
         })
 

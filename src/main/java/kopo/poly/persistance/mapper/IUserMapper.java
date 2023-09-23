@@ -22,4 +22,7 @@ public interface IUserMapper {
 
     /* 유저 상세보기 */
     UserDTO getUserInfo(UserDTO pDTO) throws Exception;
+
+    /* 로그인 */
+    UserDTO getLogin(UserDTO pDTO) throws Exception;
 }

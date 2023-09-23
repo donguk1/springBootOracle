@@ -7,6 +7,7 @@ import kopo.poly.util.CmmUtil;
 import kopo.poly.util.EncryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -27,12 +29,12 @@ public class UserController {
     private final IUserService userService;
 
     /* 회원가입 창으로 이동  */
-    @GetMapping(value = "userRegForm")
+    @GetMapping(value = "regForm")
     public String userRegForm() {
 
         log.info(".controller 회원가입 창으로 이동");
 
-        return "/user/userRegForm";
+        return "/user/regForm";
     }
 
     /* 아이디 중복체크 */
@@ -147,18 +149,73 @@ public class UserController {
     }
 
     /* 로그인 창으로 이동 */
-    @GetMapping(value = "userLogin")
+    @GetMapping(value = "login")
     public String userLogin() {
 
         log.info(".controller 로그인 창으로 이동");
 
-        return "/user/userLogin";
+        return "/user/login";
     }
 
     /* 로그인 실행 */
+    @ResponseBody
+    @PostMapping(value = "loginProc")
+    public MsgDTO loginProc(HttpServletRequest request, HttpSession session) {
+
+        log.info(".controller 로그인 실행");
+
+        int res = 0;  // 로그인 성공시 1, 불일치로 인한 실패 0, 시스템 에러 2
+        String msg = "";
+        MsgDTO dto = null;
+        UserDTO pDTO = null;
+
+        try {
+
+            String id = CmmUtil.nvl(request.getParameter("id"));
+            String pw = CmmUtil.nvl(request.getParameter("pw"));
+
+            log.info("id : " + id);
+            log.info("pw : " + pw);
+
+            pDTO = new UserDTO();
+            pDTO.setId(id);
+            pDTO.setPw(EncryptUtil.encHashSHA256(pw));
+
+            UserDTO rDTO = userService.getLogin(pDTO);
+
+            if (CmmUtil.nvl(rDTO.getId()).length() > 0 ) {  // 로그인 성공
+
+                res = 1;
+                msg = "로그인 성공했습니다.";
+
+                session.setAttribute("SS_ID", id);
+                session.setAttribute("SS_NAME", CmmUtil.nvl(rDTO.getName()));
+
+            } else {
+                msg = "아이디와 비밀번호가 올바르지 않습니다.";
+            }
+
+        } catch (Exception e) {
+
+            res = 2;
+            msg = "시스템 문제로 로그인이 실패 했습니다.";
+            log.info(e.toString());
+            e.printStackTrace();
+
+        } finally {
+
+            dto = new MsgDTO();
+            dto.setResult(res);
+            dto.setMsg(msg);
+
+            log.info(".controller 로그인 종료");
+        }
+
+        return dto;
+    }
 
     /* 유저 리스트 가져오기 */
-    @GetMapping(value = "userList")
+    @GetMapping(value = "list")
     public String userList(ModelMap modelMap) throws Exception {
 
         log.info(".controller 유저 리스트 실행");
@@ -169,11 +226,11 @@ public class UserController {
 
         log.info(".controller 유저 리스트 종료");
 
-        return "/user/userList";
+        return "/user/list";
     }
 
     /* 유저 상세보기 */
-    @GetMapping(value = "userInfo")
+    @GetMapping(value = "info")
     public String userInfo(HttpServletRequest request, ModelMap modelMap) throws Exception {
 
         log.info(".controller 유저 상세보기 실행");
@@ -191,7 +248,39 @@ public class UserController {
 
         log.info(".controller 유저 상세보기 종료");
 
-        return "user/userInfo";
+        return "/user/info";
+    }
+
+    /* 로그인 후 이동 */
+    @GetMapping(value = "loginResult")
+    public String lorinResult() {
+
+        log.info(".controller 로그인 확인창 실행");
+
+        return "/user/loginResult";
+
+    }
+
+    /* 로그인 정보 */
+    @GetMapping(value = "loginInfo")
+    public String loginInfo(HttpSession session, ModelMap modelMap) throws Exception {
+
+        log.info(".controller 로그인시 유저 정보 실행");
+
+        String id = CmmUtil.nvl((String) session.getAttribute("SS_ID"));
+
+        UserDTO pDTO = new UserDTO();
+        pDTO.setId(id);
+
+        log.info("id : " + id);
+
+        UserDTO rDTO = Optional.ofNullable(userService.getUserInfo(pDTO)).orElseGet(UserDTO::new);
+
+        modelMap.addAttribute("rDTO", rDTO);
+
+        log.info(".controller 로그인시 유저 정보 종료");
+
+        return "/user/loginInfo";
     }
 
 }

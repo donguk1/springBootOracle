@@ -18,7 +18,7 @@
 
         //상세보기 이동
         function doDetail(id) {
-            location.href = "/user/userInfo?id=" + id;
+            location.href = "/user/info?id=" + id;
         }
 
     </script>
