@@ -106,6 +106,47 @@ public class UserService implements IUserService {
         return rDTO;
     }
 
+    /* 비번 변경용 */
+    @Override
+    public UserDTO updatePwEmail(UserDTO pDTO) throws Exception {
+
+        log.info(".service EmailAuth 실행");
+
+        /*
+         * DB에 이메일이 존재하는지 SQL 쿼리 실행
+         * SQL 쿼리에 COUNT()를 사용하기 때문에 반드시 조회 결과는 존재함
+         */
+        UserDTO rDTO = userMapper.getEmailExists(pDTO);
+
+        String existsYn = CmmUtil.nvl(rDTO.getExistsYn());
+
+        log.info("existsYn : " + existsYn);
+
+        if (existsYn.equals("Y")) {
+
+            // 6자리 랜덤 숫자 생성하기
+            int authNumber = ThreadLocalRandom.current().nextInt(100000, 10000000);
+
+            log.info("authNumber : " + authNumber);
+
+            MailDTO mailDTO = new MailDTO();
+            mailDTO.setTitle("이메일 중복 확인 인증번호 발송 메일");
+            mailDTO.setContents("인증번호는 " + authNumber + "입니다.");
+            mailDTO.setToMail(EncryptUtil.decAES128CBC(CmmUtil.nvl(pDTO.getEmail())));
+
+            mailService.doSendMail(mailDTO);
+
+            mailDTO = null;
+
+            rDTO.setAuthNumber(authNumber);
+
+        }
+
+        log.info(".service EmailAuth 종료");
+
+        return rDTO;
+    }
+
     /* 유저 리스트 가져오기 */
     @Override
     public List<UserDTO> getUserList() throws Exception {
@@ -124,6 +165,7 @@ public class UserService implements IUserService {
         return userMapper.getUserInfo(pDTO);
     }
 
+    /* 로그인 */
     @Override
     public UserDTO getLogin(UserDTO pDTO) throws Exception {
 
@@ -148,5 +190,29 @@ public class UserService implements IUserService {
         log.info(".service 로그인 종료");
 
         return rDTO;
+    }
+
+    /**
+     * 아이디, 비밀번호 찾기에 활용
+     * <p>
+     * 1. 이름과 이메일이 맞다면, 아이디 알려주기
+     * <p>
+     * 2. 아이디, 이름과 이메일이 맞다면, 비밀번호 재설정하기
+     */
+    @Override
+    public UserDTO getUserId(UserDTO pDTO) throws Exception {
+
+        log.info(".service 아이디 비번 찾기 실행");
+
+        return userMapper.getUserId(pDTO);
+    }
+
+    /* 비밀번호 재설정 */
+    @Override
+    public int updatePassword(UserDTO pDTO) throws Exception {
+
+        log.info(".service 비번 재설정 실행");
+
+        return userMapper.updatePassword(pDTO);
     }
 }

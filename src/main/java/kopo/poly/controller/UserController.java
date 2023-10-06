@@ -5,15 +5,16 @@ import kopo.poly.dto.UserDTO;
 import kopo.poly.service.IUserService;
 import kopo.poly.util.CmmUtil;
 import kopo.poly.util.EncryptUtil;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
+import org.springframework.expression.spel.ast.OpOr;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.ModelMap;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
+
+import javax.jws.soap.SOAPBinding;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.util.ArrayList;
@@ -73,6 +74,29 @@ public class UserController {
         pDTO.setEmail(EncryptUtil.encAES128CBC(email));
 
         UserDTO rDTO = Optional.ofNullable(userService.getEmailExists(pDTO)).orElseGet(UserDTO::new);
+
+        log.info(".controller 이메일 중복체크 종료");
+
+        return rDTO;
+    }
+
+    /* 비번 변경용 */
+    @ResponseBody
+    @PostMapping(value = "updatePwEmail")
+    public UserDTO updatePwEmail(HttpServletRequest request) throws Exception {
+
+        log.info(".controller 이메일 중복체크 실행");
+
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("email : " + email);
+
+        UserDTO pDTO = new UserDTO();
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserDTO rDTO = Optional.ofNullable(userService.updatePwEmail(pDTO)).orElseGet(UserDTO::new);
+
+        log.info("123        " + rDTO.getAuthNumber());
 
         log.info(".controller 이메일 중복체크 종료");
 
@@ -283,4 +307,123 @@ public class UserController {
         return "/user/loginInfo";
     }
 
+    /**
+     * 아이디, 비밀번호 찾기에 활용
+     * 1. 이름과 이메일이 맞다면, 아이디 알려주기
+     * 2. 아이디, 이름과 이메일이 맞다면, 비밀번호 재설정하기
+     */
+    @GetMapping(value = "searchUserId")
+    public String searchUserId() {
+
+        log.info(".controller 아이디 비번 찾기 창 이동");
+
+        return "user/searchUserId";
+
+    }
+
+    /* 아이디, 비번 찾기 로직 */
+    @PostMapping(value = "searchUserIdProc")
+    public String searchIdProc(HttpServletRequest request, ModelMap modelMap) throws Exception {
+
+        log.info(".controller 아이디 비번 찾기 실행");
+
+        String name = CmmUtil.nvl(request.getParameter("name"));
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("name : " + name);
+        log.info("email : " + email);
+
+        UserDTO pDTO = new UserDTO();
+        pDTO.setName(name);
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserDTO rDTO = Optional.ofNullable(userService.getUserId(pDTO)).orElseGet(UserDTO::new);
+
+        modelMap.addAttribute("rDTO", rDTO);
+
+        log.info(".controller 아이디 비번 찾기 종료");
+
+        return "user/searchUserIdResult";
+
+    }
+
+    /* 비밀번호 재설정 */
+    @GetMapping(value = "searchPassword")
+    public String searchPassword(HttpSession session) {
+
+        log.info(".controller 비번 재설정 창 이동");
+
+        session.setAttribute("NEW_PASSWORD", "");
+        session.removeAttribute("NEW_PASSWORD");
+
+        return "user/searchPassword";
+    }
+
+    /* 비번 찾기 로직 */
+    @PostMapping(value = "searchPasswordProc")
+    public String searchPasswordProc(HttpServletRequest request, ModelMap modelMap, HttpSession session) throws Exception {
+
+        log.info(".controller 비번 찾기 실행");
+
+        String id = CmmUtil.nvl(request.getParameter("id"));
+        String name = CmmUtil.nvl(request.getParameter("name"));
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("id : " + id);
+        log.info("name : " + name);
+        log.info("email : " + email);
+
+        UserDTO pDTO = new UserDTO();
+        pDTO.setId(id);
+        pDTO.setName(name);
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserDTO rDTO = Optional.ofNullable(userService.getUserId(pDTO)).orElseGet(UserDTO::new);
+
+        modelMap.addAttribute("rDTO", rDTO);
+
+        session.setAttribute("NEW_PASSWORD", id);
+
+        log.info(".controller 비번 찾기 완료");
+
+        return "user/newPassword";
+    }
+
+    /* 비번 재설정 로직 */
+    @PostMapping(value = "newPasswordProc")
+    public String newPasswordProc(HttpServletRequest request, ModelMap modelMap, HttpSession session) throws Exception {
+
+        log.info(".controller 비번 재설정 실행");
+
+        String msg = "";
+
+        String newPassword = CmmUtil.nvl((String) session.getAttribute("NEW_PASSWORD"));
+
+        if (newPassword.length() > 0) {
+            String pw = CmmUtil.nvl(request.getParameter("pw"));
+
+            log.info("pw : " + pw);
+
+            UserDTO pDTO = new UserDTO();
+            pDTO.setId(newPassword);
+            pDTO.setPw(EncryptUtil.encHashSHA256(pw));
+
+            userService.updatePassword(pDTO);
+
+            session.setAttribute("NEW_PASSWORD", "");
+            session.removeAttribute("NEW_PASSWORD");
+
+            msg = "비밀번호가 재설정되었습니다.";
+
+        } else {
+            msg = "비정상 접근입니다.";
+
+        }
+
+        modelMap.addAttribute("msg", msg);
+
+        log.info(".controller 비번 재설정 완료");
+
+        return "user/newPasswordResult";
+    }
 }
