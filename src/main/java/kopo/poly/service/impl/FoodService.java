@@ -9,6 +9,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.xml.crypto.dsig.CanonicalizationMethod;
@@ -21,6 +22,15 @@ import java.util.List;
 @Service
 public class FoodService implements IFoodService {
 
+    /**
+     * 첫번째 : 초(0-59) <p>
+     * 두번째 : 분(0-59)<p>
+     * 세번째 : 시간(0-23)<p>
+     * 네번째 : 일(1-31)<p>
+     * 다섯번째 : 월(1-12)<p>
+     * 여섯번째 : 요일(1-7, 1: 일, 7: 토)
+     */
+    @Scheduled(cron = "* * 3 * * *")    // 새벽 3시마다 실행
     @Override
     public List<FoodDTO> toDayFood() throws Exception {
 
