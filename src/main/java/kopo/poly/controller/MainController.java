@@ -18,4 +18,10 @@ public class MainController {
 
         return "index";
     }
+
+
+    @GetMapping(value = "today_weather")
+    public String today_weather() {
+        return "/today_weather";
+    }
 }
