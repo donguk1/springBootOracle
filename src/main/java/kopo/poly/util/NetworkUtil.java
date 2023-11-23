@@ -2,10 +2,7 @@ package kopo.poly.util;
 
 import org.springframework.lang.Nullable;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -114,6 +111,57 @@ public class NetworkUtil {
 
         } catch (IOException e) {
             throw new RuntimeException("API 응답을 읽는데 실패했습니다.", e);
+        }
+    }
+
+    /**
+     * POST 방식으로 OpenAPI 호출 <p/>
+     * 네이버 API 전송 소스 참고하여 구현
+     *
+     * @param apiUrl         호출할 OpenAPI URL 주소
+     * @param postParams     전송할 파라미터
+     * @param requestHeaders 전송하고 싶은 헤더 정보
+     */
+    public static String post(String apiUrl, String postParams,
+                              @Nullable Map<String, String> requestHeaders) {
+
+        HttpURLConnection con = connect(apiUrl);
+
+        try {
+            con.setRequestMethod("POST");
+
+            // 전송할 헤더값 존재시 헤더 값 추가
+            for (Map.Entry<String, String> header : requestHeaders.entrySet()) {
+                con.setRequestProperty(header.getKey(), header.getValue());
+
+            }
+
+            // POST 방식으로 전송할때, 전송할 파라미터 정보 넣기(GET 방식은 필요없음)
+             con.setDoOutput(true);
+
+            try (DataOutputStream wr = new DataOutputStream(con.getOutputStream())) {
+                wr.write(postParams.getBytes());
+                wr.flush();
+
+            }
+
+            // API 호출 후 결과 받기
+            int responseCode = con.getResponseCode();
+
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                return readBody(con.getInputStream());
+
+            } else {
+                return readBody(con.getErrorStream());
+
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("API 요청과 응답 실패", e);
+
+        } finally {
+            con.disconnect();;
+
         }
     }
 }
